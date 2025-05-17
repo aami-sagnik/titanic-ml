@@ -11,31 +11,26 @@ def transform_fare(df):
     df["Fare"] = np.log1p(df["Fare"])
     return df
 
-ordinal_encoding = {
-   "Pclass": [3, 2, 1]
-}
-
-def encode_ordinal(df):
+def combine_family_members(df):
     df = df.copy()
-    for feature, order in ordinal_encoding.items():
+    df["FamilyMembers"] = df["SibSp"] + df["Parch"]
+    return df
+
+def encode_ordinal(df, ordinal_encoding_map):
+    df = df.copy()
+    for feature, order in ordinal_encoding_map.items():
         df[feature] = df[feature].map({v: i for i, v in enumerate(order)})
     return df
 
-target = "Survived"
-features = ["Pclass", "Sex", "Age", "SibSp", "Parch", "Embarked", "Fare", "Cabin"]
-nominal_features = ['Sex', 'Embarked', 'Cabin']
-
-def encode_nominal(df):
+def encode_nominal(df, nominal_features):
     nominal_dummies = pd.get_dummies(df[nominal_features], drop_first=True)
     nominal_dummies = nominal_dummies.astype(int)
-    if target in df:
-        return pd.concat([df[features].drop(nominal_features, axis=1), nominal_dummies, df[[target]]], axis=1) # for training dataset
-    else:
-        return pd.concat([df[features].drop(nominal_features, axis=1), nominal_dummies], axis=1) # for testing dataset
+    return pd.concat([df.drop(nominal_features, axis=1), nominal_dummies], axis=1)
 
-def apply_all(df):
+def apply_all(df, ordinal_encoding_map, nominal_features):
     df = transform_cabin(df)
     df = transform_fare(df)
-    df = encode_ordinal(df)
-    df = encode_nominal(df)
+    df = encode_ordinal(df, ordinal_encoding_map)
+    df = encode_nominal(df, nominal_features)
+    df = combine_family_members(df)
     return df
